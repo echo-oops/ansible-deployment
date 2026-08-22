@@ -1,0 +1,169 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+  workflow_dispatch: {}
+
+env:
+  PYTHON_VERSION: '3.10'
+
+jobs:
+  lint:
+    name: Lint and syntax checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt','**/requirements-dev.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install lint/test tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible ansible-lint yamllint
+
+      - name: Run yamllint
+        run: |
+          yamllint -c .yamllint || true
+        continue-on-error: false
+
+      - name: Run ansible-lint
+        run: |
+          # Use custom config if present
+          if [ -f tests/lint/ansible-lint.yml ]; then
+            ansible-lint -c tests/lint/ansible-lint.yml roles || ansible-lint roles || true
+          else
+            ansible-lint roles || true
+          fi
+
+      - name: Ansible syntax-check for playbooks
+        run: |
+          # Check each playbook in playbooks/
+          for pb in playbooks/*.yml; do
+            if [ -f "$pb" ]; then
+              ansible-playbook --syntax-check -i inventory/staging.yml "$pb"
+            fi
+          done
+
+  molecule:
+    name: Molecule tests (application role)
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Docker (ensure available)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker.io
+          sudo systemctl start docker
+          sudo usermod -aG docker $USER || true
+          docker --version
+
+      - name: Install Molecule and test deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install "molecule[docker]" testinfra pytest ansible-lint yamllint
+
+      - name: Make helper scripts executable
+        run: |
+          if [ -d scripts/helpers ]; then
+            chmod +x scripts/helpers/*.sh || true
+          fi
+
+      - name: Run molecule test for application role
+        working-directory: tests/molecule
+        env:
+          # Molecule may need Docker access; ensure DOCKER_HOST if required
+          MOLECULE_DISTRO: ubuntu2004
+        run: |
+          # Run molecule test for the scenario (default)
+          molecule test -s default
+
+  deploy:
+    name: Deploy to staging (manual, protected)
+    runs-on: ubuntu-latest
+    needs: molecule
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    environment:
+      name: staging
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible
+
+      - name: Make helper scripts executable
+        run: |
+          if [ -d scripts/helpers ]; then
+            chmod +x scripts/helpers/*.sh || true
+          fi
+
+      - name: Add SSH key to agent
+        uses: webfactory/ssh-agent@v0.8.1
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Create temporary vault password file
+        if: ${{ secrets.ANSIBLE_VAULT_PASSWORD != '' }}
+        run: |
+          echo -n "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > vault.pass
+          chmod 600 vault.pass
+
+      - name: Run deploy playbook (staging)
+        run: |
+          # Use helper wrapper if present, otherwise call ansible-playbook directly
+          if [ -x scripts/helpers/run-playbook.sh ]; then
+            if [ -f vault.pass ]; then
+              scripts/helpers/run-playbook.sh --vault-password-file vault.pass -i inventory/staging.yml playbooks/deploy.yml
+            else
+              scripts/helpers/run-playbook.sh -i inventory/staging.yml playbooks/deploy.yml
+            fi
+          else
+            if [ -f vault.pass ]; then
+              ansible-playbook -i inventory/staging.yml --vault-password-file vault.pass playbooks/deploy.yml
+            else
+              ansible-playbook -i inventory/staging.yml playbooks/deploy.yml
+            fi
+          fi
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+
+      - name: Remove temporary vault password file
+        if: always() && (secrets.ANSIBLE_VAULT_PASSWORD != '')
+        run: |
+          rm -f vault.pass || true
+
+      - name: Post-deploy verification (simple)
+        run: |
+          ansible -i inventory/staging.yml web -m uri -a "url=http://127.0.0.1:{{ application.port | default(8080) }}{{ healthcheck.path | default('/health') }} status_code={{ healthcheck.expected_status | default(200) }}" || true

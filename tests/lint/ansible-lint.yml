@@ -1,0 +1,9 @@
+# Пример локального/CI-конфига для ansible-lint (в tests/lint/)
+# Можно подключать в CI: ansible-lint -c tests/lint/ansible-lint.yml roles/
+skip_list:
+  - 'experimental'   # пример: пропустить экспериментальные правила
+warn_list: []
+verbosity: 0
+exclude_paths:
+  - tests/
+  - molecule/

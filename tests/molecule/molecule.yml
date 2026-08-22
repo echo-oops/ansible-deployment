@@ -1,0 +1,26 @@
+---
+# Molecule configuration for testing the 'application' role
+# Driver: docker (использует образ с Ansible)
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: instance
+    image: geerlingguy/docker-ubuntu2004-ansible:latest
+    pre_build_image: true
+    privileged: false
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+provisioner:
+  name: ansible
+  lint:
+    name: ansible-lint
+  playbooks:
+    converge: converge.yml
+verifier:
+  name: testinfra
+  lint:
+    name: flake8
+  options:
+    v: 1

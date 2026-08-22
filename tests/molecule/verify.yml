@@ -1,0 +1,15 @@
+---
+# Molecule verify playbook (optional). Molecule by default runs Testinfra,
+# but можно добавить дополнительные проверки через Ansible.
+- name: Verify with Ansible
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check that application directory exists
+      ansible.builtin.stat:
+        path: "{{ application.app_path | default('/opt/apps/myflaskapp/current') }}"
+      register: app_dir
+    - name: Fail if app directory missing
+      ansible.builtin.fail:
+        msg: "Application directory not found"
+      when: not app_dir.stat.exists
