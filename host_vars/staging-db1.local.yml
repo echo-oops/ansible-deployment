@@ -1,0 +1,12 @@
+# host_vars for staging-db1.local
+
+ansible_host: 10.0.10.30
+ansible_user: dbadmin
+ansible_become: true
+
+postgres:
+  data_dir: /var/lib/postgresql/data
+  listen_address: 0.0.0.0
+  port: 5432
+
+# vault_db_password: хранить в ansible-vault

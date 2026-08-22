@@ -1,0 +1,16 @@
+# host_vars for app1.example.com
+
+ansible_host: 192.0.2.20
+ansible_user: deploy
+ansible_become: true
+
+# Переменные приложения, специфичные для этого хоста
+application:
+  name: myflaskapp
+  deploy_user: deploy
+  port: 8080
+  app_path: /opt/apps/myflaskapp/current
+  venv_path: /opt/apps/myflaskapp/venv
+
+# Если на этом хосте нужно включить дополнительные post-deploy команды
+post_deploy_commands: []

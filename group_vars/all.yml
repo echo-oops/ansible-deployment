@@ -1,0 +1,37 @@
+# Общие переменные для всех хостов
+# Не храните секреты в открытом виде — используйте ansible-vault для файлов с пометкой vault_*
+
+ansible_user: deploy
+ansible_become: true
+
+env: staging            # по умолчанию staging; для production переопределить в inventory/production.yml или group_vars/production.yml
+timezone: "UTC"
+
+# Пакеты, которые обычно нужны на всех хостах
+common_packages:
+  - git
+  - curl
+  - wget
+  - ca-certificates
+  - unzip
+  - htop
+  - vim
+
+# Настройки логирования/ротации (пример)
+logrotate_conf_path: /etc/logrotate.d
+
+# Настройки мониторинга (минимум)
+monitoring_enabled: false
+monitoring_node_exporter_port: 9100
+
+# Путь для размещения приложений
+app_base_path: /opt/apps
+
+# SSH / безопасность
+ssh_port: 22
+ssh_allow_root: false
+
+# Vault-переменные (пример, хранить в зашифрованном файле)
+# vault_db_password: !vault |
+#   $ANSIBLE_VAULT;1.1;AES256
+#   <зашифрованные данные>

@@ -1,0 +1,16 @@
+# host_vars for db1.example.com
+
+ansible_host: 192.0.2.30
+ansible_user: dbadmin
+ansible_become: true
+
+# DB specific settings
+postgres:
+  data_dir: /var/lib/postgresql/data
+  listen_address: 0.0.0.0
+  port: 5432
+
+# Пароли и секреты хранить в Ansible Vault
+# vault_db_password: !vault |
+#   $ANSIBLE_VAULT;1.1;AES256
+#   <зашифрованные данные>

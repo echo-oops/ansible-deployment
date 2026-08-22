@@ -1,0 +1,11 @@
+# host_vars for staging-web1.local (staging environment)
+
+ansible_host: 10.0.10.10
+ansible_user: deploy
+ansible_become: true
+
+nginx:
+  server_name: staging-web1.local
+  extra_conf: ""
+
+app_base_path: /opt/apps

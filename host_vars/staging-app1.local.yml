@@ -1,0 +1,15 @@
+# host_vars for staging-app1.local
+
+ansible_host: 10.0.10.20
+ansible_user: deploy
+ansible_become: true
+
+application:
+  name: myflaskapp
+  deploy_user: deploy
+  port: 8080
+  app_path: /opt/apps/myflaskapp/current
+  venv_path: /opt/apps/myflaskapp/venv
+
+# Для staging можно использовать тестовую БД
+# DATABASE_URL: "postgresql://testuser:{{ vault_db_password }}@staging-db1.local:5432/testdb"

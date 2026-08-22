@@ -1,0 +1,42 @@
+# Переменные для группы app (приложение)
+# Пример для простого Flask приложения (можно адаптировать под Node.js и т.д.)
+
+application:
+  name: myflaskapp
+  repo: "https://github.com/example/myflaskapp.git"   # заменить на реальный репозиторий
+  repo_version: "main"                                # ветка или тег
+  deploy_user: deploy
+  port: 8080
+  venv_path: "{{ app_base_path }}/{{ application.name }}/venv"
+  app_path: "{{ app_base_path }}/{{ application.name }}/current"
+  gunicorn_workers: 3
+  env:
+    FLASK_ENV: production
+    FLASK_DEBUG: "0"
+    DATABASE_URL: "postgresql://dbuser:{{ vault_db_password }}@db1.example.com:5432/mydb"  # vault_db_password хранить в vault
+
+# Зависимости приложения (пример для Python)
+app_python_packages:
+  - pip
+  - virtualenv
+  - build-essential
+
+# Systemd unit template variables
+systemd_unit:
+  name: "{{ application.name }}"
+  description: "Gunicorn service for {{ application.name }}"
+  user: "{{ application.deploy_user }}"
+  working_directory: "{{ application.app_path }}"
+  exec_start: "{{ application.venv_path }}/bin/gunicorn -w {{ application.gunicorn_workers }} -b 127.0.0.1:{{ application.port }} wsgi:app"
+
+# Миграции/команды после деплоя (если есть)
+post_deploy_commands:
+  - "{{ application.venv_path }}/bin/pip install -r {{ application.app_path }}/requirements.txt"
+  - "{{ application.venv_path }}/bin/python {{ application.app_path }}/manage.py db upgrade"  # пример для Flask-Migrate
+
+# Healthcheck
+healthcheck:
+  path: /health
+  expected_status: 200
+  retries: 5
+  delay: 2

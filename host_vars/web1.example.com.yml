@@ -1,0 +1,22 @@
+# host_vars for web1.example.com
+# Переопределения и специфичные переменные для этого хоста
+
+ansible_host: 192.0.2.10
+ansible_user: deploy
+ansible_become: true
+
+# Специфичные для web хоста переменные
+nginx:
+  server_name: web1.example.com
+  extra_conf: ""   # можно добавить дополнительные директивы nginx
+
+# Если нужно указать нестандартный SSH порт
+# ansible_port: 2222
+
+# Пример: путь для логов конкретного хоста
+app_base_path: /opt/apps
+
+# Примечание: секреты (пароли, ключи) хранить в vault
+# vault_api_key: !vault |
+#   $ANSIBLE_VAULT;1.1;AES256
+#   <зашифрованные данные>

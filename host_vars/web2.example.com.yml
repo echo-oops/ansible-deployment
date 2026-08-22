@@ -1,0 +1,11 @@
+# host_vars for web2.example.com
+
+ansible_host: 192.0.2.11
+ansible_user: deploy
+ansible_become: true
+
+nginx:
+  server_name: web2.example.com
+  extra_conf: ""
+
+app_base_path: /opt/apps
