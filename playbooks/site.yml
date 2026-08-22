@@ -1,0 +1,39 @@
+---
+# site.yml
+# Основной orchestration playbook: выполняет подготовку окружения (setup)
+# и затем развертывание приложения (deploy).
+# Запуск: ansible-playbook -i inventory/staging.yml playbooks/site.yml
+
+- name: Full site deployment - setup and deploy
+  hosts: all
+  gather_facts: true
+  become: true
+
+  pre_tasks:
+    - name: Ensure inventory environment variable is set
+      ansible.builtin.debug:
+        msg: "Running site playbook for env={{ env | default('staging') }}"
+
+  roles:
+    - { role: common, tags: ['common','setup'] }
+    - { role: users, tags: ['users','setup'] }
+    - { role: packages, tags: ['packages','setup'] }
+    - { role: firewall, tags: ['firewall','setup'] }
+
+- name: Deploy application to app hosts
+  hosts: app
+  gather_facts: true
+  become: true
+
+  roles:
+    - { role: application, tags: ['application','deploy'] }
+    - { role: monitoring, tags: ['monitoring','deploy'] }
+
+- name: Configure web layer (nginx) on web hosts
+  hosts: web
+  gather_facts: true
+  become: true
+
+  roles:
+    - { role: nginx, tags: ['nginx','deploy'] }
+    - { role: monitoring, tags: ['monitoring','deploy'] }

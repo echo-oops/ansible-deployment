@@ -1,0 +1,32 @@
+---
+# setup.yml
+# Подготовка серверов: базовая конфигурация, пользователи, пакеты, firewall.
+# Запуск: ansible-playbook -i inventory/staging.yml playbooks/setup.yml
+# Этот плейбук безопасно запускать повторно (идемпотентен).
+
+- name: Setup all hosts - common tasks
+  hosts: all
+  gather_facts: true
+  become: true
+
+  roles:
+    - { role: common, tags: ['common'] }
+    - { role: users, tags: ['users'] }
+    - { role: packages, tags: ['packages'] }
+    - { role: firewall, tags: ['firewall'] }
+
+  post_tasks:
+    - name: Show summary of setup
+      ansible.builtin.debug:
+        msg: "Setup completed on {{ inventory_hostname }}"
+
+- name: Verify connectivity after setup
+  hosts: all
+  gather_facts: false
+  become: false
+
+  tasks:
+    - name: Ping host to verify connectivity
+      ansible.builtin.ping:
+      register: ping_result
+      failed_when: ping_result.ping is not defined

@@ -1,0 +1,77 @@
+---
+# rollback.yml
+# Простой плейбук для отката последнего деплоя.
+# В учебном проекте откат реализован минимально: остановка сервиса,
+# восстановление предыдущей версии из директории releases (если используется),
+# или удаление текущей директории и перезапуск systemd unit.
+#
+# Важно: конкретная логика отката зависит от того, как реализован deploy (releases, backups).
+# Перед использованием адаптируй задачи под реальную стратегию отката.
+#
+# Запуск: ansible-playbook -i inventory/staging.yml playbooks/rollback.yml --extra-vars "target_release=previous"
+
+- name: Rollback application on app hosts
+  hosts: app
+  gather_facts: true
+  become: true
+
+  vars:
+    # Ожидается, что deploy хранит релизы в {{ app_base_path }}/{{ application.name }}/releases
+    releases_path: "{{ app_base_path }}/{{ application.name }}/releases"
+    current_path: "{{ app_base_path }}/{{ application.name }}/current"
+    target_release: "{{ target_release | default('previous') }}"  # 'previous' или конкретный каталог
+
+  tasks:
+    - name: Ensure releases directory exists
+      ansible.builtin.stat:
+        path: "{{ releases_path }}"
+      register: releases_dir
+
+    - name: Fail if no releases directory found
+      ansible.builtin.fail:
+        msg: "Releases directory {{ releases_path }} not found. Cannot perform rollback."
+      when: not releases_dir.stat.exists
+
+    - name: List releases
+      ansible.builtin.command:
+        cmd: "ls -1 {{ releases_path }} | sort -r"
+      register: releases_list
+      changed_when: false
+
+    - name: Determine target release
+      ansible.builtin.set_fact:
+        chosen_release: >-
+          {% if target_release == 'previous' %}
+            {{ (releases_list.stdout_lines | default([]))[1] | default('') }}
+          {% else %}
+            {{ target_release }}
+          {% endif %}
+
+    - name: Fail if no previous release found
+      ansible.builtin.fail:
+        msg: "No previous release found to rollback to."
+      when: chosen_release == '' or chosen_release is undefined
+
+    - name: Switch current symlink to chosen release
+      ansible.builtin.file:
+        path: "{{ current_path }}"
+        state: link
+        src: "{{ releases_path }}/{{ chosen_release }}"
+        owner: "{{ application.deploy_user | default(ansible_user) }}"
+        group: "{{ application.deploy_user | default(ansible_user) }}"
+
+    - name: Restart application service after rollback
+      ansible.builtin.systemd:
+        name: "{{ systemd_unit.name | default(application.name) }}"
+        state: restarted
+        daemon_reload: yes
+
+    - name: Verify application is up after rollback
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ application.port | default(8080) }}"
+        timeout: 30
+
+    - name: Show rollback result
+      ansible.builtin.debug:
+        msg: "Rolled back {{ inventory_hostname }} to release {{ chosen_release }}"

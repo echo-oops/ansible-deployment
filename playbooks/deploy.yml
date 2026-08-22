@@ -1,0 +1,61 @@
+---
+# deploy.yml
+# Развёртывание приложения и конфигурация веб-сервера.
+# Запуск: ansible-playbook -i inventory/staging.yml playbooks/deploy.yml
+# Предполагает, что setup уже выполнен (пакеты, пользователи, firewall).
+
+- name: Deploy application on app hosts
+  hosts: app
+  gather_facts: true
+  become: true
+
+  vars:
+    # Можно переопределять через --extra-vars или group_vars
+    deploy_branch: "{{ application.repo_version | default('main') }}"
+
+  pre_tasks:
+    - name: Ensure app base path exists
+      ansible.builtin.file:
+        path: "{{ app_base_path | default('/opt/apps') }}"
+        state: directory
+        owner: "{{ application.deploy_user | default(ansible_user) }}"
+        group: "{{ application.deploy_user | default(ansible_user) }}"
+        mode: '0755'
+
+  roles:
+    - { role: application, tags: ['application'] }
+
+  post_tasks:
+    - name: Wait for application to respond on port
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ application.port | default(8080) }}"
+        timeout: 30
+      register: wait_result
+
+    - name: Check health endpoint (if defined)
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ application.port | default(8080) }}{{ healthcheck.path | default('/health') }}"
+        status_code: "{{ healthcheck.expected_status | default(200) }}"
+        return_content: false
+      register: health
+      retries: "{{ healthcheck.retries | default(3) }}"
+      delay: "{{ healthcheck.delay | default(2) }}"
+      until: health.status == (healthcheck.expected_status | default(200))
+
+- name: Configure web layer on web hosts
+  hosts: web
+  gather_facts: true
+  become: true
+
+  roles:
+    - { role: nginx, tags: ['nginx'] }
+
+  post_tasks:
+    - name: Test nginx configuration
+      ansible.builtin.shell: nginx -t
+      args:
+        warn: false
+      register: nginx_test
+      changed_when: false
+      failed_when: nginx_test.rc != 0
