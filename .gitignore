@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Virtualenvs
+venv/
+.env/
+.envrc
+
+# Ansible
+*.retry
+.vault_pass
+vault.pass
+*.retry
+.ansible/tmp
+.ansible/cp
+
+# Molecule
+.molecule/
+.molecule_test/
+.molecule_cache/
+tests/molecule/*/instance/
+
+# Docker
+docker-compose.override.yml
+**/docker-compose.override.yml
+
+# Editor/OS
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# Secrets (should never be committed)
+*.pem
+*.key
+*.crt
+secrets.yml
+vault.yml
+
+# Logs
+*.log
+
+# GitHub Actions artifacts
+.vscode/
+.idea/

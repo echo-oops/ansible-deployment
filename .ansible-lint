@@ -1,0 +1,16 @@
+# Minimal ansible-lint config (v2+)
+# See https://ansible-lint.readthedocs.io for more rules and customization
+
+skip_list:
+  # Add rule IDs to skip if needed, e.g. 'no-changed-when'
+  - experimental
+
+warn_list: []
+
+verbosity: 0
+
+exclude_paths:
+  - tests/
+  - .github/
+  - docs/
+  - scripts/

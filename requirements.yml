@@ -1,0 +1,16 @@
+# External Ansible Galaxy roles / collections used by the project.
+# Add or remove entries as needed. Local roles live in ./roles and do not need to be listed here.
+
+# Example collections (useful helpers)
+collections:
+  - name: community.general
+  - name: ansible.posix
+
+# Example roles from Galaxy (optional)
+roles:
+  - name: geerlingguy.nginx
+    src: geerlingguy.nginx
+    version: ">=4.0.0"
+  - name: geerlingguy.pip
+    src: geerlingguy.pip
+    version: ">=2.0.0"
