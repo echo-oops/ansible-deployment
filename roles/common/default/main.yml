@@ -1,0 +1,15 @@
+---
+# defaults for common role
+
+common_packages:
+  - git
+  - curl
+  - wget
+  - ca-certificates
+  - unzip
+  - htop
+  - vim
+  - lsb-release
+  - apt-transport-https
+  - gnupg
+timezone: "UTC"

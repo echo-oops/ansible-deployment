@@ -1,0 +1,42 @@
+---
+# tasks for roles/firewall
+# Простая реализация: если доступен ufw — используем его, иначе пытаемся применить правила через iptables (минимум)
+
+- name: Check if ufw is available
+  ansible.builtin.stat:
+    path: /usr/sbin/ufw
+  register: ufw_bin
+  tags: firewall
+
+- name: Install ufw if missing on Debian-like systems
+  ansible.builtin.package:
+    name: ufw
+    state: present
+  when:
+    - ufw_bin.stat.exists == false
+    - ansible_facts['os_family'] == 'Debian'
+  tags: firewall
+
+- name: Ensure allowed ports are configured via ufw
+  ansible.builtin.ufw:
+    rule: allow
+    port: "{{ item }}"
+  loop: "{{ allowed_ports | default([22]) }}"
+  when: ufw_bin.stat.exists or ansible_facts['os_family'] == 'Debian'
+  tags: firewall
+
+- name: Ensure ufw is enabled
+  ansible.builtin.ufw:
+    state: enabled
+    policy: allow
+  when: ufw_bin.stat.exists or ansible_facts['os_family'] == 'Debian'
+  tags: firewall
+
+- name: Fallback - ensure iptables rules for allowed ports (idempotent minimal)
+  ansible.builtin.shell: |
+    iptables -C INPUT -p tcp --dport {{ item }} -j ACCEPT || iptables -I INPUT -p tcp --dport {{ item }} -j ACCEPT
+  loop: "{{ allowed_ports | default([22]) }}"
+  when: not (ufw_bin.stat.exists or ansible_facts['os_family'] == 'Debian')
+  args:
+    warn: false
+  tags: firewall

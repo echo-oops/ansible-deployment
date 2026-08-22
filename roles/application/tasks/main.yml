@@ -1,0 +1,63 @@
+---
+# tasks for roles/application
+# Развёртывание простого Python (Flask) приложения с virtualenv и systemd unit
+
+- name: Ensure application base directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ application.deploy_user | default(ansible_user) }}"
+    group: "{{ application.deploy_user | default(ansible_user) }}"
+    mode: '0755'
+  loop:
+    - "{{ app_base_path | default('/opt/apps') }}"
+    - "{{ application.app_path | default(app_base_path + '/' + application.name + '/current') }}"
+    - "{{ application.venv_path | default(app_base_path + '/' + application.name + '/venv') }}"
+  tags: application
+
+- name: Clone or update application repository
+  ansible.builtin.git:
+    repo: "{{ application.repo }}"
+    dest: "{{ application.app_path }}"
+    version: "{{ application.repo_version | default('main') }}"
+    update: yes
+    force: yes
+    accept_hostkey: yes
+  tags: application
+
+- name: Create virtualenv if not exists
+  ansible.builtin.command:
+    cmd: python3 -m venv "{{ application.venv_path }}"
+  args:
+    creates: "{{ application.venv_path }}/bin/activate"
+  tags: application
+
+- name: Install Python requirements into virtualenv
+  ansible.builtin.pip:
+    requirements: "{{ application.app_path }}/requirements.txt"
+    virtualenv: "{{ application.venv_path }}"
+    virtualenv_command: python3 -m venv
+  when: ansible_facts['os_family'] is defined
+  tags: application
+
+- name: Ensure systemd unit file for application is present
+  ansible.builtin.template:
+    src: systemd-app.service.j2
+    dest: "/etc/systemd/system/{{ systemd_unit.name | default(application.name) }}.service"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart application
+  tags: application
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: yes
+  tags: application
+
+- name: Ensure application service is enabled and started
+  ansible.builtin.systemd:
+    name: "{{ systemd_unit.name | default(application.name) }}"
+    state: started
+    enabled: true
+  tags: application

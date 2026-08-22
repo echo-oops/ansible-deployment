@@ -1,0 +1,10 @@
+---
+# defaults for users role
+# Пример структуры users:
+# users:
+#   - name: deploy
+#     comment: "Deploy user"
+#     groups: ["deploy","www-data"]
+#     shell: /bin/bash
+#     ssh_key: "ssh-ed25519 AAAA..."
+users: []

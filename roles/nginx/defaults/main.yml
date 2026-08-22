@@ -1,0 +1,10 @@
+---
+# defaults for nginx role
+
+nginx_package: nginx
+nginx_service_name: nginx
+nginx_site_name: myapp
+nginx_listen_port: 80
+nginx_listen_ssl_port: 443
+nginx_worker_processes: auto
+nginx_client_max_body_size: 16m

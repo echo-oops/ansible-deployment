@@ -1,0 +1,35 @@
+---
+# tasks for roles/common
+# Базовая подготовка ОС: установка общих пакетов, timezone, sysctl (минимум)
+
+- name: Ensure common packages are installed
+  ansible.builtin.package:
+    name: "{{ common_packages | default([]) }}"
+    state: present
+  tags: common, packages
+
+- name: Ensure timezone is configured
+  ansible.builtin.command:
+    cmd: timedatectl set-timezone "{{ timezone }}"
+  when: timezone is defined
+  changed_when: false
+  tags: common
+
+- name: Ensure /etc/sysctl.d/99-custom.conf exists with recommended settings
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/99-custom.conf
+    content: |
+      # Custom sysctl settings managed by Ansible
+      net.ipv4.ip_forward = 0
+      net.ipv4.tcp_syncookies = 1
+    owner: root
+    group: root
+    mode: '0644'
+  notify: reload sysctl
+  tags: common, sysctl
+
+- name: Apply sysctl settings
+  ansible.builtin.command:
+    cmd: sysctl --system
+  changed_when: false
+  tags: common, sysctl

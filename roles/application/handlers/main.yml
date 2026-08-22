@@ -1,0 +1,7 @@
+---
+# handlers for application role
+
+- name: restart application
+  ansible.builtin.systemd:
+    name: "{{ systemd_unit.name | default(application.name) }}"
+    state: restarted

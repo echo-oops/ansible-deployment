@@ -1,0 +1,8 @@
+---
+galaxy_info:
+  author: "project"
+  description: "Install and configure nginx as reverse proxy"
+  license: MIT
+  min_ansible_version: 2.9
+dependencies:
+  - role: packages

@@ -1,0 +1,43 @@
+---
+# tasks for roles/nginx
+# Установка и конфигурация nginx, создание site конфигурации из шаблона
+
+- name: Install nginx package
+  ansible.builtin.package:
+    name: "{{ nginx_package | default('nginx') }}"
+    state: present
+  tags: nginx
+
+- name: Ensure nginx log directory exists
+  ansible.builtin.file:
+    path: /var/log/nginx
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  tags: nginx
+
+- name: Deploy nginx site configuration
+  ansible.builtin.template:
+    src: nginx-site.j2
+    dest: "/etc/nginx/sites-available/{{ nginx_site_name | default('myapp') }}.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart nginx
+  tags: nginx
+
+- name: Ensure site enabled (symlink)
+  ansible.builtin.file:
+    src: "/etc/nginx/sites-available/{{ nginx_site_name | default('myapp') }}.conf"
+    dest: "/etc/nginx/sites-enabled/{{ nginx_site_name | default('myapp') }}.conf"
+    state: link
+  notify: restart nginx
+  tags: nginx
+
+- name: Ensure nginx service is enabled and started
+  ansible.builtin.service:
+    name: "{{ nginx_service_name | default('nginx') }}"
+    state: started
+    enabled: true
+  tags: nginx

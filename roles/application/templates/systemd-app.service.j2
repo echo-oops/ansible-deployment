@@ -1,0 +1,15 @@
+[Unit]
+Description={{ systemd_unit.description | default("Application service") }}
+After=network.target
+
+[Service]
+User={{ systemd_unit.user | default('deploy') }}
+Group={{ systemd_unit.user | default('deploy') }}
+WorkingDirectory={{ systemd_unit.working_directory }}
+ExecStart={{ systemd_unit.exec_start }}
+Restart=on-failure
+Environment=PATH={{ application.venv_path }}/bin
+Environment=FLASK_ENV={{ application.env.FLASK_ENV | default('production') }}
+
+[Install]
+WantedBy=multi-user.target

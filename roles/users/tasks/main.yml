@@ -1,0 +1,61 @@
+---
+# tasks for roles/users
+# Создание пользователей и настройка SSH authorized_keys и sudoers
+
+- name: Ensure group for deploy users exists
+  ansible.builtin.group:
+    name: "{{ item.group | default('deploy') }}"
+    state: present
+  loop: "{{ users | default([]) }}"
+  loop_control:
+    loop_var: item
+  when: users | default([]) | length > 0
+  tags: users
+
+- name: Create users
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    comment: "{{ item.comment | default('managed by ansible') }}"
+    groups: "{{ item.groups | default([]) | join(',') }}"
+    shell: "{{ item.shell | default('/bin/bash') }}"
+    create_home: yes
+    state: present
+  loop: "{{ users | default([]) }}"
+  loop_control:
+    loop_var: item
+  tags: users
+
+- name: Ensure .ssh directory exists for users
+  ansible.builtin.file:
+    path: "/home/{{ item.name }}/.ssh"
+    state: directory
+    owner: "{{ item.name }}"
+    group: "{{ item.name }}"
+    mode: '0700'
+  loop: "{{ users | default([]) }}"
+  loop_control:
+    loop_var: item
+  when: users | default([]) | length > 0
+  tags: users
+
+- name: Install authorized_keys for users
+  ansible.builtin.authorized_key:
+    user: "{{ item.name }}"
+    key: "{{ item.ssh_key }}"
+    state: present
+  loop: "{{ users | default([]) }}"
+  loop_control:
+    loop_var: item
+  when: item.ssh_key is defined
+  tags: users
+
+- name: Ensure sudoers file for deploy group exists
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/99_deploy
+    content: |
+      # Allow deploy group to use sudo without password for admin tasks
+      %deploy ALL=(ALL) NOPASSWD:ALL
+    owner: root
+    group: root
+    mode: '0440'
+  tags: users

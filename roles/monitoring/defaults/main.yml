@@ -1,0 +1,8 @@
+---
+# defaults for monitoring role
+
+monitoring_enabled: false
+monitoring_health_url: "http://127.0.0.1:{{ application.port | default(8080) }}{{ healthcheck.path | default('/health') }}"
+monitoring_log: /var/log/monitor-health.log
+monitoring_retries: 3
+monitoring_delay: 2

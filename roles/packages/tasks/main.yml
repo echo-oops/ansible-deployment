@@ -1,0 +1,16 @@
+---
+# tasks for roles/packages
+# Установка системных пакетов, специфичных для ролей/приложения
+
+- name: Install packages defined in packages_list
+  ansible.builtin.package:
+    name: "{{ packages_list | default([]) }}"
+    state: present
+  tags: packages
+
+- name: Ensure python3-pip present (for systems that need pip)
+  ansible.builtin.package:
+    name: "{{ python_package | default('python3-pip') }}"
+    state: present
+  when: python_package is defined
+  tags: packages

@@ -1,0 +1,39 @@
+---
+# tasks for roles/monitoring
+# Простая проверка: устанавливаем скрипт healthcheck и systemd unit, который запускает его периодически (timer можно добавить позже)
+# Скрипт делает HTTP запрос к локальному приложению и пишет результат в лог
+
+- name: Ensure monitoring directory exists
+  ansible.builtin.file:
+    path: /opt/monitoring
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  tags: monitoring
+
+- name: Deploy healthcheck script
+  ansible.builtin.template:
+    src: healthcheck.sh.j2
+    dest: /opt/monitoring/healthcheck.sh
+    owner: root
+    group: root
+    mode: '0755'
+  tags: monitoring
+
+- name: Deploy healthcheck systemd service
+  ansible.builtin.template:
+    src: healthcheck.service.j2
+    dest: /etc/systemd/system/monitor-health.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: reload systemd
+  tags: monitoring
+
+- name: Ensure monitoring service is enabled and started
+  ansible.builtin.systemd:
+    name: monitor-health.service
+    state: started
+    enabled: true
+  tags: monitoring

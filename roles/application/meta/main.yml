@@ -1,0 +1,9 @@
+---
+galaxy_info:
+  author: "project"
+  description: "Deploy application: clone repo, create venv, install deps, systemd unit"
+  license: MIT
+  min_ansible_version: 2.9
+dependencies:
+  - role: packages
+  - role: users

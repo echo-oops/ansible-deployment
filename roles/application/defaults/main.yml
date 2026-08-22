@@ -1,0 +1,19 @@
+---
+# defaults for application role
+
+application:
+  name: myflaskapp
+  repo: "https://github.com/example/myflaskapp.git"
+  repo_version: "main"
+  deploy_user: deploy
+  port: 8080
+  venv_path: "/opt/apps/myflaskapp/venv"
+  app_path: "/opt/apps/myflaskapp/current"
+  gunicorn_workers: 3
+
+systemd_unit:
+  name: "{{ application.name }}"
+  description: "Gunicorn service for {{ application.name }}"
+  user: "{{ application.deploy_user }}"
+  working_directory: "{{ application.app_path }}"
+  exec_start: "{{ application.venv_path }}/bin/gunicorn -w {{ application.gunicorn_workers }} -b 127.0.0.1:{{ application.port }} wsgi:app"
