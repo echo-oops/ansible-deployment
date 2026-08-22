@@ -1,0 +1,28 @@
+# Inventory в формате YAML для production окружения
+# Замените хосты на реальные имена/адреса ваших серверов
+
+all:
+  vars:
+    ansible_user: deploy            # пользователь по умолчанию для подключения
+    ansible_become: true            # использовать sudo при необходимости
+    # ansible_ssh_private_key_file: /home/youruser/.ssh/id_rsa  # при необходимости раскомментируйте и укажите путь
+    env: production
+
+  children:
+    web:
+      hosts:
+        web1.example.com:
+          ansible_host: 192.0.2.10
+        web2.example.com:
+          ansible_host: 192.0.2.11
+
+    app:
+      hosts:
+        app1.example.com:
+          ansible_host: 192.0.2.20
+
+    db:
+      hosts:
+        db1.example.com:
+          ansible_host: 192.0.2.30
+          ansible_user: dbadmin      # если для БД нужен отдельный пользователь
