@@ -38,63 +38,6 @@
 ansible-playbook -i inventory/staging.yml playbooks/deploy.yml
 
 
-Структура проекта
-
-ansible-deployment/
-├── .github/                 # CI workflows
-├── inventory/               # staging.yml, production.yml
-├── group_vars/              # all.yml, web.yml, app.yml
-├── host_vars/               # host-specific vars
-├── playbooks/               # site.yml, setup.yml, deploy.yml, rollback.yml
-├── roles/                   # common, users, packages, nginx, application, firewall, monitoring
-├── scripts/                 # helper scripts
-│   └── helpers/
-├── tests/                   # molecule scenarios and tests
-├── docs/                    # architecture.md, demo-plan.md
-├── ansible.cfg
-├── requirements.yml
-├── .ansible-lint
-├── .gitignore
-└── README.md
-
-
-Ключевые директории и файлы
-
-inventory/ — YAML inventory для staging и production; группы web, app, db.
-
-group_vars/ — переменные для групп (all.yml, web.yml, app.yml). Секреты — в Vault.
-
-host_vars/ — переменные для отдельных хостов (IP, специфичные настройки).
-
-roles/ — роли с tasks, handlers, templates, defaults, meta.
-
-playbooks/ — orchestration: site.yml вызывает setup и deploy; rollback.yml — откат.
-
-scripts/helpers/ — утилиты: run-playbook.sh, build_artifact.sh, vault-decrypt.sh, check-env.sh, cleanup.sh.
-
-tests/molecule/ — Molecule scenario для роли application и Testinfra тесты.
-
-.github/workflows/ci.yml — CI pipeline.
-
-
-Установка зависимостей
-
-# 1. Клонировать репозиторий
-git clone <repo-url>
-cd ansible-deployment
-
-# 2. Создать виртуальное окружение
-python3 -m venv .venv
-source .venv/bin/activate
-
-# 3. Обновить pip и установить основные инструменты
-python -m pip install --upgrade pip
-pip install ansible ansible-lint yamllint
-
-# 4. Для тестирования ролей (Molecule + Testinfra)
-pip install "molecule[docker]" testinfra pytest
-
-
 Вспомогательные скрипты
 В scripts/helpers/ есть утилиты:
 
